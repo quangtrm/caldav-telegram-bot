@@ -25,7 +25,8 @@ jobs:
           pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: 📦 Download previous cache
+      - name: 📦 Download previous cache (if exists)
+        continue-on-error: true  # 👈 Cho phép tiếp tục nếu artifact chưa có
         uses: actions/download-artifact@v4
         with:
           name: caldav-cache
@@ -35,6 +36,8 @@ jobs:
         run: |
           if [ -f ./cache/last_events.json.zip ]; then
             unzip -o ./cache/last_events.json.zip -d .
+          else
+            echo "⚠️ Không tìm thấy cache cũ, đây là lần chạy đầu tiên."
           fi
 
       - name: 🤖 Run calendar bot
