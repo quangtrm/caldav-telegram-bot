@@ -134,6 +134,17 @@ def fetch_events(days=7):
 def load_previous():
     return json.loads(STORE_FILE.read_text()) if STORE_FILE.exists() else []
 
+def normalize_event(e):
+    """Chuẩn hóa sự kiện để so sánh"""
+    return {
+        "uid": e["uid"],
+        "summary": e.get("summary", "").strip(),
+        "location": e.get("location", "").strip(),
+        "description": e.get("description", "").strip(),
+        "start": str(e["start"]),
+        "end": str(e["end"]),
+        "chu_tri": e.get("chu_tri", "").strip(),
+    }
 
 def diff_events(prev, cur):
     def to_map(events):
