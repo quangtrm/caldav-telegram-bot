@@ -177,7 +177,7 @@ def save_current(cur):
     """Ghi sự kiện hiện tại vào cache"""
     STORE_FILE.parent.mkdir(parents=True, exist_ok=True)  # 👈 đảm bảo thư mục .cache tồn tại
     STORE_FILE.write_text(json.dumps(cur, indent=2, ensure_ascii=False))
-    logger.info(f"💾 Đã lưu snapshot {len(cur)} sự kiện vào {STORE_FILE}")
+    log.info(f"💾 Đã lưu snapshot {len(cur)} sự kiện vào {STORE_FILE}")
 
 def build_output(events, added, changed, removed):
     lines1 = [bold_md("📋 Tất cả lịch sắp tới:")]
