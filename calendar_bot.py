@@ -109,7 +109,7 @@ def fetch_events(days=7):
         if res.status_code not in (200, 207):
             log.error(f"❌ CalDAV error {res.status_code}")
             return None  # ❌ Dừng xử lý tiếp
-
+            
         tree = etree.parse(BytesIO(res.content))
         ns = {"cal": "urn:ietf:params:xml:ns:caldav"}
         events = []
@@ -134,17 +134,6 @@ def fetch_events(days=7):
 def load_previous():
     return json.loads(STORE_FILE.read_text()) if STORE_FILE.exists() else []
 
-def normalize_event(e):
-    """Chuẩn hóa sự kiện để so sánh"""
-    return {
-        "uid": e["uid"],
-        "summary": e.get("summary", "").strip(),
-        "location": e.get("location", "").strip(),
-        "description": e.get("description", "").strip(),
-        "start": str(e["start"]),
-        "end": str(e["end"]),
-        "chu_tri": e.get("chu_tri", "").strip(),
-    }
 
 def diff_events(prev, cur):
     def to_map(events):
@@ -157,12 +146,17 @@ def diff_events(prev, cur):
 
     for uid in cur_map:
         if uid not in prev_map:
+            logger.debug(f"[diff_events] ADD {uid}")
             added.append(cur_map[uid])
         elif json.dumps(cur_map[uid], sort_keys=True) != json.dumps(prev_map[uid], sort_keys=True):
+            logger.debug(f"[diff_events] CHANGE {uid}")
+            logger.debug(f"  OLD: {json.dumps(prev_map[uid], ensure_ascii=False)}")
+            logger.debug(f"  NEW: {json.dumps(cur_map[uid], ensure_ascii=False)}")
             changed.append(cur_map[uid])
 
     for uid in prev_map:
         if uid not in cur_map:
+            logger.debug(f"[diff_events] REMOVE {uid}")
             removed.append(prev_map[uid])
 
     return added, changed, removed
