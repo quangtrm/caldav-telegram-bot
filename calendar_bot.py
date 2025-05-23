@@ -175,14 +175,14 @@ async def main():
         current = fetch_events(7)
 
         if current is None:
-            logger.warning("⛔ Không thể lấy dữ liệu CalDAV – Dừng xử lý.")
+            log.warning("⛔ Không thể lấy dữ liệu CalDAV – Dừng xử lý.")
             return
 
         old = load_events()
         added, removed, updated = diff_events(current, old)
         
         if not (added or removed or updated):
-            logger.info("✅ Không có thay đổi, không gửi Telegram.")
+            log.info("✅ Không có thay đổi, không gửi Telegram.")
             return
 
         await bot.send_message(
@@ -192,10 +192,10 @@ async def main():
         )
 
         store_events(current)
-        logger.info("✅ Đã gửi Telegram (%d mới / %d sửa / %d xoá)", len(added), len(updated), len(removed))
+        log.info("✅ Đã gửi Telegram (%d mới / %d sửa / %d xoá)", len(added), len(updated), len(removed))
 
     except Exception as e:
-        logger.exception("❌ Lỗi trong hàm main()")
+        log.exception("❌ Lỗi trong hàm main()")
 
 if __name__ == "__main__":
     asyncio.run(main())
