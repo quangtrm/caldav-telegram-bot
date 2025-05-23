@@ -106,11 +106,26 @@ def fetch_events(days=7):
             data=report_xml
         )
 
-        if res.status_code != 207:
+        if res.status_code not in (200, 207):
             log.error(f"❌ CalDAV error {res.status_code}")
             return None  # ❌ Dừng xử lý tiếp
-
-        return parse_caldav_events(res.content)
+            
+        tree = etree.parse(BytesIO(res.content))
+        ns = {"cal": "urn:ietf:params:xml:ns:caldav"}
+        events = []
+        for b in tree.findall(".//cal:calendar-data", namespaces=ns):
+            cal = Calendar.from_ical(b.text.encode())
+            for comp in cal.walk():
+                if comp.name != "VEVENT": continue
+                events.append({
+                    "uid": str(comp.get("uid")),
+                    "start": comp.get("dtstart").dt.isoformat(),
+                    "end": comp.get("dtend").dt.isoformat(),
+                    "summary": str(comp.get("summary", "")),
+                    "location": str(comp.get("location", "")),
+                    "desc_raw": str(comp.get("description", ""))
+                })
+        return sorted(events, key=lambda x: x["start"])
 
     except Exception as e:
         log.exception("❌ Lỗi khi truy cập CalDAV:")
@@ -178,20 +193,19 @@ async def main():
             log.warning("⛔ Không thể lấy dữ liệu CalDAV – Dừng xử lý.")
             return
 
-        old = load_events()
-        added, removed, updated = diff_events(current, old)
+        previous = load_previous()
+        added, changed, removed = diff_events(previous, current)
         
         if not (added or removed or updated):
             log.info("✅ Không có thay đổi, không gửi Telegram.")
             return
 
-        await bot.send_message(
-            chat_id=TG_CHAT_ID,
-            text=text,
-            parse_mode="MarkdownV2"
-        )
+        text = build_output(current, added, changed, removed)
+        #log.info("======= TEXT SẼ GỬI TELEGRAM =======\n%s", text)
+        bot = Bot(token=TG_TOKEN)
+        await bot.send_message(chat_id=TG_CHAT_ID, text=text, parse_mode="MarkdownV2")
 
-        store_events(current)
+        save_current(current)
         log.info("✅ Đã gửi Telegram (%d mới / %d sửa / %d xoá)", len(added), len(updated), len(removed))
 
     except Exception as e:
