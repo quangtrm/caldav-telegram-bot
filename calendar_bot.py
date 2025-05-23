@@ -77,7 +77,7 @@ def fetch_events(days=7):
         now = datetime.utcnow()
         start = now.strftime("%Y%m%dT%H%M%SZ")
         end = (now + timedelta(days=days)).strftime("%Y%m%dT%H%M%SZ")
-        logger.info(f"📡 Truy vấn CalDAV từ {start} → {end}")
+        log.info(f"📡 Truy vấn CalDAV từ {start} → {end}")
 
         report_xml = f"""<?xml version="1.0" encoding="UTF-8"?>
 <cal:calendar-query xmlns:d="DAV:" xmlns:cal="urn:ietf:params:xml:ns:caldav">
@@ -107,13 +107,13 @@ def fetch_events(days=7):
         )
 
         if res.status_code != 207:
-            logger.error(f"❌ CalDAV error {res.status_code}")
+            log.error(f"❌ CalDAV error {res.status_code}")
             return None  # ❌ Dừng xử lý tiếp
 
         return parse_caldav_events(res.content)
 
     except Exception as e:
-        logger.exception("❌ Lỗi khi truy cập CalDAV:")
+        log.exception("❌ Lỗi khi truy cập CalDAV:")
         return None
 
 def load_previous():
