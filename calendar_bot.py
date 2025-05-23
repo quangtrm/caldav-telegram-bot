@@ -158,8 +158,8 @@ def diff_events(prev, cur):
 
     for uid in cur_map:
         if uid not in prev_map:
-            log.debug(f"uid not in prev_map - {uid}")
             log.debug(f"[diff_events] ADD {uid}")
+            added.append(cur_map[uid])
         elif json.dumps(cur_map[uid], sort_keys=True) != json.dumps(prev_map[uid], sort_keys=True):
             log.debug(f"[diff_events] CHANGE {uid}")
             log.debug(f"  OLD: {json.dumps(prev_map[uid], ensure_ascii=False)}")
