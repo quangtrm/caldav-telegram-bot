@@ -1,4 +1,3 @@
-
 name: CalDAV Telegram Bot
 
 on:
@@ -26,19 +25,11 @@ jobs:
           pip install -r requirements.txt
 
       - name: 📦 Download previous cache (if exists)
-        continue-on-error: true  # 👈 Cho phép tiếp tục nếu artifact chưa có
+        continue-on-error: true
         uses: actions/download-artifact@v4
         with:
           name: caldav-cache
-          path: ./cache
-
-      - name: 🔓 Extract last_events.json if available
-        run: |
-          if [ -f ./cache/last_events.json.zip ]; then
-            unzip -o ./cache/last_events.json.zip -d .
-          else
-            echo "⚠️ Không tìm thấy cache cũ, đây là lần chạy đầu tiên."
-          fi
+          path: .cache
 
       - name: 🤖 Run calendar bot
         env:
@@ -51,16 +42,9 @@ jobs:
           source .venv/bin/activate
           python calendar_bot.py
 
-      - name: 🗃 Zip updated last_events.json
-        if: always()
-        run: |
-          if [ -f last_events.json ]; then
-            zip -j last_events.json.zip last_events.json
-          fi
-
       - name: ⬆️ Upload updated cache
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: caldav-cache
-          path: last_events.json.zip
+          path: .cache/last_events.json

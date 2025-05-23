@@ -30,7 +30,7 @@ TG_CHAT_ID = os.environ["TG_CHAT_ID"]
 CAL_URL    = os.environ["CAL_URL"]
 CAL_USER   = os.environ["CAL_USER"]
 CAL_PASS   = os.environ["CAL_PASS"]
-STORE_FILE = Path("last_events.json")
+STORE_FILE = Path(".cache/last_events.json")
 
 ESCAPE_CHARS = r"_ * [ ] ( ) ~ ` > # + - = | { } . !".split()
 
