@@ -1,0 +1,43 @@
+name: CalDAV Bot Schedule
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'  # ⏰ Chạy mỗi 10 phút (UTC)
+  workflow_dispatch:        # ▶️ Cho phép chạy thủ công
+
+jobs:
+  run-bot:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: ✅ Checkout code
+        uses: actions/checkout@v3
+
+      - name: 🗂 Restore last_events.json from cache
+        uses: actions/cache@v3
+        with:
+          path: .cache/last_events.json
+          key: caldav-cache-key
+          restore-keys: |
+            caldav-cache
+
+      - name: 🐍 Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+
+      - name: 📦 Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: 🚀 Run calendar bot
+        env:
+          TG_TOKEN: ${{ secrets.TG_TOKEN }}
+          TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}
+          CAL_URL: ${{ secrets.CAL_URL }}
+          CAL_USER: ${{ secrets.CAL_USER }}
+          CAL_PASS: ${{ secrets.CAL_PASS }}
+        run: |
+          mkdir -p .cache
+          python calendar_bot.py
