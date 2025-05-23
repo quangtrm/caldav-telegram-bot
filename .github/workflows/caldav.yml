@@ -1,37 +1,43 @@
-name: CalDAV Bot Schedule
+
+name: CalDAV Telegram Bot
 
 on:
   schedule:
-    - cron: '*/10 * * * *'  # ⏰ Chạy mỗi 10 phút (UTC)
-  workflow_dispatch:        # ▶️ Cho phép chạy thủ công
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
 
 jobs:
-  run-bot:
+  run:
     runs-on: ubuntu-latest
-
     steps:
-      - name: ✅ Checkout code
+      - name: 📥 Checkout repository
         uses: actions/checkout@v3
-
-      - name: 🗂 Restore last_events.json from cache
-        uses: actions/cache@v3
-        with:
-          path: .cache/last_events.json
-          key: caldav-cache-key
-          restore-keys: |
-            caldav-cache
 
       - name: 🐍 Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.12'
 
-      - name: 📦 Install dependencies
+      - name: 💾 Install dependencies
         run: |
-          python -m pip install --upgrade pip
+          python -m venv .venv
+          source .venv/bin/activate
+          pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: 🚀 Run calendar bot
+      - name: 📦 Download previous cache
+        uses: actions/download-artifact@v4
+        with:
+          name: caldav-cache
+          path: ./cache
+
+      - name: 🔓 Extract last_events.json if available
+        run: |
+          if [ -f ./cache/last_events.json.zip ]; then
+            unzip -o ./cache/last_events.json.zip -d .
+          fi
+
+      - name: 🤖 Run calendar bot
         env:
           TG_TOKEN: ${{ secrets.TG_TOKEN }}
           TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}
@@ -39,5 +45,19 @@ jobs:
           CAL_USER: ${{ secrets.CAL_USER }}
           CAL_PASS: ${{ secrets.CAL_PASS }}
         run: |
-          mkdir -p .cache
+          source .venv/bin/activate
           python calendar_bot.py
+
+      - name: 🗃 Zip updated last_events.json
+        if: always()
+        run: |
+          if [ -f last_events.json ]; then
+            zip -j last_events.json.zip last_events.json
+          fi
+
+      - name: ⬆️ Upload updated cache
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: caldav-cache
+          path: last_events.json.zip
