@@ -73,47 +73,48 @@ def get_chu_tri(desc):
     return match.group(1).strip() if match else ""
 
 def fetch_events(days=7):
-    now = datetime.now(pytz.utc)
-    end_time = now + timedelta(days=days)
-    start_utc = now.strftime('%Y%m%dT%H%M%SZ')
-    end_utc   = end_time.strftime('%Y%m%dT%H%M%SZ')
-    report_xml = f'''<?xml version="1.0" encoding="UTF-8"?>
+    try:
+        now = datetime.utcnow()
+        start = now.strftime("%Y%m%dT%H%M%SZ")
+        end = (now + timedelta(days=days)).strftime("%Y%m%dT%H%M%SZ")
+        logger.info(f"📡 Truy vấn CalDAV từ {start} → {end}")
+
+        report_xml = f"""<?xml version="1.0" encoding="UTF-8"?>
 <cal:calendar-query xmlns:d="DAV:" xmlns:cal="urn:ietf:params:xml:ns:caldav">
   <d:prop>
     <d:getetag/>
-    <cal:calendar-data content-type="text/calendar" version="2.0">
-      <cal:expand start="{start_utc}" end="{end_utc}"/>
-    </cal:calendar-data>
+    <cal:calendar-data/>
   </d:prop>
   <cal:filter>
     <cal:comp-filter name="VCALENDAR">
       <cal:comp-filter name="VEVENT">
-        <cal:time-range start="{start_utc}" end="{end_utc}"/>
+        <cal:time-range start="{start}" end="{end}"/>
       </cal:comp-filter>
     </cal:comp-filter>
   </cal:filter>
-</cal:calendar-query>'''
-    headers = {"Depth": "1", "Content-Type": "application/xml"}
-    res = requests.request("REPORT", CAL_URL, auth=(CAL_USER, CAL_PASS), headers=headers, data=report_xml)
-    if res.status_code not in (200, 207):
-        log.error(f"CalDAV error {res.status_code}")
-        return []
-    tree = etree.parse(BytesIO(res.content))
-    ns = {"cal": "urn:ietf:params:xml:ns:caldav"}
-    events = []
-    for b in tree.findall(".//cal:calendar-data", namespaces=ns):
-        cal = Calendar.from_ical(b.text.encode())
-        for comp in cal.walk():
-            if comp.name != "VEVENT": continue
-            events.append({
-                "uid": str(comp.get("uid")),
-                "start": comp.get("dtstart").dt.isoformat(),
-                "end": comp.get("dtend").dt.isoformat(),
-                "summary": str(comp.get("summary", "")),
-                "location": str(comp.get("location", "")),
-                "desc_raw": str(comp.get("description", ""))
-            })
-    return sorted(events, key=lambda x: x["start"])
+</cal:calendar-query>"""
+
+        headers = {
+            "Depth": "1",
+            "Content-Type": "application/xml"
+        }
+
+        res = requests.request(
+            "REPORT", CAL_URL,
+            auth=(CAL_USER, CAL_PASS),
+            headers=headers,
+            data=report_xml
+        )
+
+        if res.status_code != 207:
+            logger.error(f"❌ CalDAV error {res.status_code}")
+            return None  # ❌ Dừng xử lý tiếp
+
+        return parse_caldav_events(res.content)
+
+    except Exception as e:
+        logger.exception("❌ Lỗi khi truy cập CalDAV:")
+        return None
 
 def load_previous():
     return json.loads(STORE_FILE.read_text()) if STORE_FILE.exists() else []
@@ -170,18 +171,31 @@ def build_output(events, added, changed, removed):
     return f"{part1}\n\n{part2}\n\n{part3}"
 
 async def main():
-    current = fetch_events(7)
-    previous = load_previous()
-    added, changed, removed = diff_events(previous, current)
-    if not any((added, changed, removed)):
-        log.info("⏳ Không có thay đổi.")
-        return
-    text = build_output(current, added, changed, removed)
-    #log.info("======= TEXT SẼ GỬI TELEGRAM =======\n%s", text)
-    bot = Bot(token=TG_TOKEN)
-    await bot.send_message(chat_id=TG_CHAT_ID, text=text, parse_mode="MarkdownV2")
-    log.info("✅ Đã gửi Telegram (%d mới / %d sửa / %d xoá)", len(added), len(changed), len(removed))
-    save_current(current)
+    try:
+        current = fetch_events(7)
+
+        if current is None:
+            logger.warning("⛔ Không thể lấy dữ liệu CalDAV – Dừng xử lý.")
+            return
+
+        old = load_events()
+        added, removed, updated = diff_events(current, old)
+        
+        if not (added or removed or updated):
+            logger.info("✅ Không có thay đổi, không gửi Telegram.")
+            return
+
+        await bot.send_message(
+            chat_id=TG_CHAT_ID,
+            text=text,
+            parse_mode="MarkdownV2"
+        )
+
+        store_events(current)
+        logger.info("✅ Đã gửi Telegram (%d mới / %d sửa / %d xoá)", len(added), len(updated), len(removed))
+
+    except Exception as e:
+        logger.exception("❌ Lỗi trong hàm main()")
 
 if __name__ == "__main__":
     asyncio.run(main())
