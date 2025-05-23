@@ -1,6 +1,6 @@
 # calendar_bot.py (fix escape of '.' in description numbering + MarkdownV2)
 import requests, json, asyncio, logging, textwrap, re, yaml
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from io import BytesIO
 from pathlib import Path
 from telegram import Bot
@@ -74,7 +74,7 @@ def get_chu_tri(desc):
 
 def fetch_events(days=7):
     try:
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         start = now.strftime("%Y%m%dT%H%M%SZ")
         end = (now + timedelta(days=days)).strftime("%Y%m%dT%H%M%SZ")
         log.info(f"📡 Truy vấn CalDAV từ {start} → {end}")
