@@ -10,7 +10,7 @@ import pytz
 import os
 
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.DEBUG,
     format='[%(asctime)s] %(levelname)s - %(message)s',
     datefmt='%Y-%m-%d %H:%M:%S'
 )
@@ -155,10 +155,11 @@ def diff_events(prev, cur):
 
     added, changed, removed = [], [], []
 
+
     for uid in cur_map:
         if uid not in prev_map:
+            log.debug(f"uid not in prev_map - {uid}")
             log.debug(f"[diff_events] ADD {uid}")
-            added.append(cur_map[uid])
         elif json.dumps(cur_map[uid], sort_keys=True) != json.dumps(prev_map[uid], sort_keys=True):
             log.debug(f"[diff_events] CHANGE {uid}")
             log.debug(f"  OLD: {json.dumps(prev_map[uid], ensure_ascii=False)}")
