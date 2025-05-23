@@ -2,7 +2,7 @@ name: CalDAV Bot Schedule
 
 on:
   schedule:
-    - cron: '*/10 * * * *'  # ⏰ Chạy mỗi 10 phút (UTC)
+    - cron: '*/5 * * * *'  # ⏰ Chạy mỗi 5 phút (UTC)
   workflow_dispatch:        # ▶️ Cho phép chạy thủ công
 
 jobs:
