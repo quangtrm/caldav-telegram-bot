@@ -206,7 +206,7 @@ async def main():
         await bot.send_message(chat_id=TG_CHAT_ID, text=text, parse_mode="MarkdownV2")
 
         save_current(current)
-        log.info("✅ Đã gửi Telegram (%d mới / %d sửa / %d xoá)", len(added), len(updated), len(removed))
+        log.info("✅ Đã gửi Telegram (%d mới / %d sửa / %d xoá)", len(added), len(changed), len(removed))
 
     except Exception as e:
         log.exception("❌ Lỗi trong hàm main()")
