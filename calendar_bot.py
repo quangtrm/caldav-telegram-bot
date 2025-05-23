@@ -220,7 +220,7 @@ async def main():
         previous = load_previous()
         added, changed, removed = diff_events(previous, current)
         
-        if not (added or removed or updated):
+        if not (added or removed or changed):
             log.info("✅ Không có thay đổi, không gửi Telegram.")
             return
 
