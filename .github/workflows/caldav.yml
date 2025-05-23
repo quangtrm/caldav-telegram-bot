@@ -24,12 +24,13 @@ jobs:
           pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: 📦 Download previous cache (if exists)
-        continue-on-error: true
-        uses: actions/download-artifact@v4
+      - name: 📦 Restore CalDAV cache
+        uses: actions/cache@v4
         with:
-          name: caldav-cache
-          path: .cache
+          path: .cache/last_events.json
+          key: caldav-cache-v1
+          restore-keys: |
+            caldav-cache-
 
       - name: 🤖 Run calendar bot
         env:
@@ -41,10 +42,3 @@ jobs:
         run: |
           source .venv/bin/activate
           python calendar_bot.py
-
-      - name: ⬆️ Upload updated cache
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: caldav-cache
-          path: .cache/last_events.json
